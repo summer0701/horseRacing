@@ -13,6 +13,7 @@ body {
   margin: 0;
   min-height: 100vh;
   background: radial-gradient(circle at top, #262a5d 0%, #0f1123 55%);
+  overflow-x: hidden;
 }
 
 button {
@@ -20,6 +21,7 @@ button {
   border: none;
   border-radius: 12px;
   padding: 12px 16px;
+  min-height: 44px;
   background: linear-gradient(135deg, #5c85ff, #7b9bff);
   color: white;
   font-weight: 600;
@@ -378,4 +380,168 @@ button:disabled {
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+@media (max-width: 768px) {
+  .top-bar,
+  .intro-top-bar {
+    width: 100%;
+    padding: 14px 16px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .title {
+    font-size: 1.35rem;
+  }
+
+  .summary {
+    font-size: 0.95rem;
+  }
+
+  .subsummary {
+    font-size: 0.88rem;
+    line-height: 1.35;
+  }
+
+  .dialogue-bar {
+    width: calc(100% - 24px);
+    margin: 0 12px 14px;
+    padding: 11px 14px;
+    border-radius: 14px;
+    font-size: 0.94rem;
+  }
+
+  .layout {
+    width: 100%;
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .sidebar {
+    flex-direction: row;
+    overflow-x: auto;
+    gap: 8px;
+    padding-bottom: 4px;
+    scrollbar-width: thin;
+  }
+
+  .sidebar::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  .nav-button {
+    flex: 0 0 auto;
+    min-width: 92px;
+    text-align: center;
+    white-space: nowrap;
+    padding: 10px 12px;
+  }
+
+  .page-view,
+  .page-content {
+    gap: 12px;
+  }
+
+  .panel {
+    padding: 14px;
+    border-radius: 16px;
+  }
+
+  .horse-card {
+    gap: 14px;
+  }
+
+  .pixel-horse {
+    font-size: 3rem;
+  }
+
+  .actions-panel .action-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .shop-grid,
+  .inventory-grid,
+  .stable-grid,
+  .race-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .inventory-item,
+  .log-entry {
+    gap: 10px;
+  }
+
+  .inventory-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .inventory-item button {
+    width: 100%;
+  }
+
+  .race-track {
+    min-height: 176px;
+    padding: 10px;
+    border-radius: 16px;
+  }
+
+  .track-lane {
+    height: 56px;
+    border-radius: 14px;
+  }
+
+  .horse-runner {
+    font-size: 2rem;
+  }
+
+  .race-status {
+    font-size: 0.88rem;
+  }
+
+  .intro-view {
+    width: 100%;
+    padding: 12px;
+  }
+
+  .intro-shell {
+    grid-template-columns: 1fr;
+    padding: 0;
+    gap: 12px;
+  }
+
+  .intro-panel,
+  .intro-history-panel {
+    border-radius: 18px;
+    padding: 14px;
+  }
+
+  .intro-main {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .intro-portrait {
+    min-height: 150px;
+    font-size: 3rem;
+    border-radius: 16px;
+  }
+
+  .intro-speech {
+    min-height: 0;
+  }
+
+  .choice-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 420px) {
+  .actions-panel .action-grid {
+    grid-template-columns: 1fr;
+  }
 }
