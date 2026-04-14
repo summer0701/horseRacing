@@ -4,21 +4,30 @@ function HorsePage({ horseState }) {
     status,
     feed,
     train,
-    race,
     saveToGoogleSheet,
     clickIdle,
+    helpWithFarming,
+    offerHorseRide,
+    doCommunityService,
     useMedicine,
     log,
   } = horseState;
   const foodItems = horse.inventory.filter((item) => item.type === "food");
   const medicineItem = horse.inventory.find((item) => item.id === "medicine");
+  const horseImage = horse.sick
+    ? "🤕🐴"
+    : horse.hp <= 25
+      ? "🥵🐴"
+      : horse.hp >= 80
+        ? "✨🐎"
+        : "🐎";
 
   return (
     <div className="page-content">
       <section className="panel">
         <h2>내 말 정보</h2>
         <div className="horse-card">
-          <div className="pixel-horse">🐎</div>
+          <div className="pixel-horse">{horseImage}</div>
           <div className="horse-stats">
             <p>이름: {horse.name}</p>
             <p>레벨: {horse.level}</p>
@@ -27,8 +36,9 @@ function HorsePage({ horseState }) {
             <p>배고픔: {horse.hunger}</p>
             <p>속도: {horse.speed.toFixed(1)}</p>
             <p>지구력: {horse.stamina}</p>
+            <p>친밀도: {horse.affinity}</p>
             <p>골드: {horse.gold}</p>
-            <p>병 상태: {horse.sick ? "아픔" : "건강"}</p>
+            <p>상태: {horse.sick ? "아픔" : "정상"}</p>
             <p>희귀도: {status.rarity}</p>
           </div>
         </div>
@@ -45,7 +55,9 @@ function HorsePage({ horseState }) {
             먹이 주기
           </button>
           <button onClick={train}>훈련하기</button>
-          <button onClick={race}>경주 참가하기</button>
+          <button onClick={helpWithFarming}>농사 도와주기</button>
+          <button onClick={offerHorseRide}>말 태워주기</button>
+          <button onClick={doCommunityService}>지역 봉사</button>
           <button
             onClick={() =>
               saveToGoogleSheet("https://your-script-url.example.com")

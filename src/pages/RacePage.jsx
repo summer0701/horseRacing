@@ -58,6 +58,7 @@ function RacePage({ horseState }) {
         <h2>경주</h2>
         <p>말의 속도: {horse.speed.toFixed(1)}</p>
         <p>말의 지구력: {horse.stamina}</p>
+        <p>친밀도: {horse.affinity}</p>
         <p>보유 골드: {horse.gold}</p>
         <p>
           체력: {horse.hp} / 배고픔: {horse.hunger}
@@ -96,7 +97,7 @@ function RacePage({ horseState }) {
           <div className="race-track">
             <div className="track-lane">
               <span
-                className="horse-runner player"
+                className="horse-runner player forward-facing"
                 style={{ left: `${Math.min(playerProgress, 98)}%` }}
               >
                 🐎

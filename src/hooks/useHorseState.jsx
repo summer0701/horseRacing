@@ -4,7 +4,7 @@ const initialHorse = {
   name: "썬더",
   level: 1,
   hp: 100,
-  hunger: 50,
+  hunger: 0,
   speed: 10,
   stamina: 10,
   exp: 0,
@@ -17,6 +17,8 @@ const initialHorse = {
   ],
   skills: ["질주", "회복"],
   horses: [{ name: "썬더", rarity: "일반", speed: 10, stamina: 10 }],
+  satietyTicks: 0,
+  affinity: 10,
 };
 
 const STORAGE_KEY = "horseRacingGameState";
@@ -24,7 +26,14 @@ const STORAGE_KEY = "horseRacingGameState";
 function loadState() {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    return stored ? JSON.parse(stored) : initialHorse;
+    if (!stored) return initialHorse;
+    const parsed = JSON.parse(stored);
+    return {
+      ...initialHorse,
+      ...parsed,
+      inventory: parsed.inventory ?? initialHorse.inventory,
+      horses: parsed.horses ?? initialHorse.horses,
+    };
   } catch (error) {
     console.error("저장된 상태 로드 오류", error);
     return initialHorse;
@@ -51,19 +60,29 @@ function useHorseState() {
   useEffect(() => {
     const timer = setInterval(() => {
       setHorse((prev) => {
-        const nextHunger = Math.max(0, prev.hunger - 3);
-        const nextHp = Math.min(100, prev.hp + (prev.hunger < 20 ? -5 : 1));
-        const nextSick = prev.sick || nextHp < 30 || nextHunger < 10;
+        const hungerGrowth =
+          prev.hunger >= 70 ? 6 : prev.hunger >= 40 ? 4 : 3;
+        const grownHunger = Math.min(100, prev.hunger + hungerGrowth);
+        const isStarvationTick = grownHunger >= 100;
+        const nextHunger = isStarvationTick ? 80 : grownHunger;
+        const nextHp = isStarvationTick ? Math.max(0, prev.hp - 1) : prev.hp;
+        const nextSick = prev.sick || nextHp < 30 || nextHunger > 90;
         if (!prev.sick && nextSick) {
           setTimeout(
             () => addLog("말이 병에 걸렸습니다. 약을 사서 치료하세요."),
             0,
           );
         }
+        if (isStarvationTick) {
+          setTimeout(
+            () => addLog("배고픔이 한계에 도달해 체력이 1 감소했습니다."),
+            0,
+          );
+        }
         return {
           ...prev,
           hunger: nextHunger,
-          hp: Math.max(0, nextHp),
+          hp: nextHp,
           sick: nextSick,
         };
       });
@@ -74,7 +93,7 @@ function useHorseState() {
 
   useEffect(() => {
     const talkTimer = setInterval(() => {
-      if (horse.hunger < 25) {
+      if (horse.hunger > 70) {
         setDialogue("배가 정말 고파요... 먹을 거 없나요?");
       } else if (horse.hp < 35) {
         setDialogue("조금 쉬면 더 잘 달릴 수 있을 것 같아요.");
@@ -99,10 +118,16 @@ function useHorseState() {
   const feed = useCallback(
     (food) => {
       if (!food || food.count <= 0) return;
+      const isHay = food.id === "hay";
+      const isEnergyDrink = food.id === "energy";
+      const immediateRelief = isHay ? 6 : food.value;
       modifyHorse(
         {
-          hunger: Math.min(100, horse.hunger + food.value),
-          hp: Math.min(100, horse.hp + Math.floor(food.value * 0.5)),
+          hunger: Math.max(0, horse.hunger - immediateRelief),
+          hp: isEnergyDrink
+            ? 100
+            : Math.min(100, horse.hp + Math.floor(food.value * 0.5)),
+          satietyTicks: isHay ? Math.min(8, (horse.satietyTicks ?? 0) + 4) : 0,
           inventory: horse.inventory.map((item) =>
             item.id === food.id ? { ...item, count: item.count - 1 } : item,
           ),
@@ -149,7 +174,9 @@ function useHorseState() {
       return;
     }
     const opponentSpeed = 8 + Math.random() * 12;
-    const score = horse.speed + horse.stamina / 10 + Math.random() * 8;
+    const affinityBonus = horse.affinity * 0.18;
+    const score =
+      horse.speed + horse.stamina / 10 + affinityBonus + Math.random() * 8;
     const difficulty = opponentSpeed + Math.random() * 10;
 
     const win = score >= difficulty;
@@ -226,7 +253,10 @@ function useHorseState() {
       }
 
       const racePower =
-        horse.speed * 1.2 + horse.stamina * 0.9 + Math.random() * 18;
+        horse.speed * 1.2 +
+        horse.stamina * 0.9 +
+        horse.affinity * 0.22 +
+        Math.random() * 18;
       const opponentPower = selected.difficulty * 9 + Math.random() * 20;
       const win = racePower >= opponentPower;
       const rewardGold = win
@@ -340,13 +370,73 @@ function useHorseState() {
   }, [horse, modifyHorse, addLog]);
 
   const clickIdle = useCallback(() => {
-    const gainGold = 5 + Math.floor(Math.random() * 10);
+    const affinityGain = 2 + Math.floor(Math.random() * 3);
     modifyHorse(
-      { gold: horse.gold + gainGold, hunger: Math.min(100, horse.hunger + 2) },
-      `말을 쓰다듬어 ${gainGold}골드를 얻었습니다!`,
+      {
+        affinity: Math.min(100, horse.affinity + affinityGain),
+        hunger: Math.min(100, horse.hunger + 1),
+      },
+      `말을 쓰다듬어 친밀도가 ${affinityGain} 올랐습니다.`,
     );
-    setDialogue("쓰다듬어주니 기분이 좋아졌어요!");
+    setDialogue("쓰다듬어주니 마음이 가까워졌어요!");
   }, [horse, modifyHorse]);
+
+  const helpWithFarming = useCallback(() => {
+    if (horse.hp < 25) {
+      addLog("체력이 부족해 농사 일을 도울 수 없습니다.");
+      setDialogue("오늘은 몸이 무거워요. 쉬고 싶어요.");
+      return;
+    }
+    const gainGold = 25 + Math.floor(Math.random() * 16);
+    modifyHorse(
+      {
+        gold: horse.gold + gainGold,
+        hp: Math.max(0, horse.hp - 4),
+        hunger: Math.min(100, horse.hunger + 9),
+        affinity: Math.min(100, horse.affinity + 1),
+      },
+      `농사 일을 도와 ${gainGold}골드를 벌었습니다.`,
+    );
+    setDialogue("밭일을 함께 하고 돌아왔어요.");
+  }, [horse, modifyHorse, addLog]);
+
+  const offerHorseRide = useCallback(() => {
+    if (horse.hp < 30) {
+      addLog("체력이 부족해 말 태워주기를 진행할 수 없습니다.");
+      setDialogue("조금 더 회복하면 사람들을 태워줄 수 있어요.");
+      return;
+    }
+    const gainGold = 45 + Math.floor(Math.random() * 26);
+    modifyHorse(
+      {
+        gold: horse.gold + gainGold,
+        hp: Math.max(0, horse.hp - 8),
+        hunger: Math.min(100, horse.hunger + 14),
+        affinity: Math.min(100, horse.affinity + 2),
+      },
+      `관광객에게 말 태워주기를 해 ${gainGold}골드를 벌었습니다.`,
+    );
+    setDialogue("사람들이 즐거워해서 저도 기뻐요!");
+  }, [horse, modifyHorse, addLog]);
+
+  const doCommunityService = useCallback(() => {
+    if (horse.hp < 28) {
+      addLog("체력이 부족해 지역 봉사를 할 수 없습니다.");
+      setDialogue("봉사도 중요하지만 지금은 회복이 먼저예요.");
+      return;
+    }
+    const gainGold = 35 + Math.floor(Math.random() * 21);
+    modifyHorse(
+      {
+        gold: horse.gold + gainGold,
+        hp: Math.max(0, horse.hp - 6),
+        hunger: Math.min(100, horse.hunger + 11),
+        affinity: Math.min(100, horse.affinity + 3),
+      },
+      `지역 봉사를 마치고 ${gainGold}골드를 지원금으로 받았습니다.`,
+    );
+    setDialogue("좋은 일을 함께 해서 더 가까워진 느낌이에요.");
+  }, [horse, modifyHorse, addLog]);
 
   const useMedicine = useCallback(() => {
     const medicine = horse.inventory.find((item) => item.id === "medicine");
@@ -358,7 +448,7 @@ function useHorseState() {
 
     modifyHorse(
       {
-        hp: Math.min(100, horse.hp + 40),
+        hp: 100,
         hunger: Math.min(100, horse.hunger + 8),
         sick: false,
         inventory: horse.inventory.map((item) =>
@@ -393,6 +483,9 @@ function useHorseState() {
     saveToGoogleSheet,
     recruitHorse,
     clickIdle,
+    helpWithFarming,
+    offerHorseRide,
+    doCommunityService,
     modifyHorse,
     addLog,
   };
